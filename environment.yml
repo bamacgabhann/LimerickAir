@@ -1,0 +1,24 @@
+name: la
+channels:
+  - conda-forge
+dependencies:
+  - black
+  - codecov
+  - dropbox
+  - hvplot
+  - flake8
+  - geopandas
+  - jupyterlab
+  - mastodon.py
+  - matplotlib
+  - numpy
+  - pandas
+  - pre-commit
+  - pytest
+  - pytest-cov
+  - rasterio
+  - scikit-learn
+  - seaborn
+  - shapely
+  - spyder
+  - stonesoup
