@@ -23,7 +23,7 @@ def la_to_dropbox(
     # Create an instance of a Dropbox class, which can make requests to the API.
 
     # Access token
-    TOKEN = "sl.BqUffC5nw1NPc79zfc9tGhB9X3wYkLhnGggEayROzZyCb-gPOO1Qk7_hv8t6wO0M6IhiC_NNEYudoOv7WRpMc4-S-EhyF7jH6ROGS3V79RkhLvQxA4SKWQZtCvo6fT52fXbCqyFX5s10"
+    TOKEN = ""
     dbx = dropbox.Dropbox(TOKEN)
 
     # Check that the access token is valid

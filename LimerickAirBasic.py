@@ -13,7 +13,7 @@ LA_unit = socket.gethostname()
 if not os.path.exists(f'./{LA_unit}'):
     os.makedirs(f'./{LA_unit}')
 
-pm_sensor = PMS7003(port='/dev/serial0')
+pm_sensor = PMS7003(serialport='/dev/serial0')
 env_sensor = LA_BME280(i2c_dev=SMBus(1))
 
 def record_pm():
