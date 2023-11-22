@@ -1,8 +1,8 @@
-import serial
+import from serial import Serial
 import struct
 
 
-class PMS7003(serial.Serial):
+class PMS7003(Serial):
     def __init__(self, port=None, baudrate=9600):
         self.port = port
         self.baudrate = baudrate
