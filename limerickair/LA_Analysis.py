@@ -25,21 +25,9 @@ class LA_Analysis:
         pm_csv=None,
         daily=True,
     ):
-        if sensor is not None:
-            self.LA_unit = sensor
-        else:
-            self.LA_unit = "LAxx"
-
-        if date is None:
-            self.date = dt.date.today() - dt.timedelta(days=1)
-        else:
-            self.date = date
-
-        if LA_location is not None:
-            self.LA_location = LA_location
-        else:
-            self.LA_location = "xx"
-
+        self.LA_unit = sensor if sensor is not None else "LAxx"
+        self.date = dt.date.today() - dt.timedelta(days=1) if date is None else date
+        self.LA_location = LA_location if LA_location is not None else "xx"
         if LA_location_long is not None:
             self.LA_location_long = LA_location_long
         else:
