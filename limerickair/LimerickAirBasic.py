@@ -20,13 +20,13 @@ def record_pm():
     while True:
         pm_data = pm_sensor.read_all()
         pm_reading = [dt.datetime.now(),pm_data['PM2.5_atm'],pm_data['PM10_atm']]
-        with open(f'./{LA_unit}/{LA_unit}_{pm_reading[0].isoformat()[0:10]}_pm.csv', "a",) as f:
+        with open(f'./{LA_unit}/{LA_unit}_{pm_reading[0].isoformat()[:10]}_pm.csv', "a") as f:
             (csv.writer(f)).writerow(pm_reading)
 
 def record_env():
     env_data = env_sensor.read_all()
     env_reading = [dt.datetime.now(),env_data['temperature'],env_data['pressure'],env_data['humidity']]
-    with open(f'./{LA_unit}/{LA_unit}_{env_reading[0].isoformat()[0:10]}_env.csv', "a", newline="") as f:
+    with open(f'./{LA_unit}/{LA_unit}_{env_reading[0].isoformat()[:10]}_env.csv', "a", newline="") as f:
         (csv.writer(f)).writerow(env_reading)
 
 pm = threading.Thread(record_pm())

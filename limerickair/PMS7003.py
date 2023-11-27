@@ -31,13 +31,7 @@ class PMS7003(serial.Serial):
     def _check_start(self):
         checkpayload = self.read(2)
         checkdata = struct.unpack("!BB", checkpayload)
-        if checkdata[0] == self.byte1:
-            if checkdata[1] == self.byte2:
-                return True
-            else:
-                return False
-        else:
-            return False
+        return checkdata[0] == self.byte1 and checkdata[1] == self.byte2
 
     def _read_(self):
         counter = 0
@@ -53,7 +47,6 @@ class PMS7003(serial.Serial):
             checksum = self.byte1 + self.byte2 + sum(payload[:-2])
             if checksum == reading[self.check]:
                 return reading
-                counter = 1
             else:
                 continue
 
@@ -68,7 +61,6 @@ class PMS7003(serial.Serial):
             if len(payload) < 30:
                 continue
             return payload
-            counter = 1
 
     def read_all(self):
         reading = self._read_()
