@@ -33,7 +33,7 @@ def record_pm_env():
         pm_data = pm_sensor.read_atm()
         env_data = env_sensor.la_read_pth_forced()
         pm_env_reading = [now,env_data['temperature'],env_data['pressure'],env_data['humidity'],pm_data['PM2.5_atm'],pm_data['PM10_atm']]
-        daily_file = f'./{LA_unit}/{LA_unit}_{pm_env_reading[0].isoformat[0:10]}.csv'
+        daily_file = f'./{LA_unit}/{LA_unit}_{pm_env_reading[0].isoformat[:10]}.csv'
         write_header = not os.path.exists(daily_file) or os.stat(daily_file).st_size == 0
         with open(daily_file, 'a', newline="") as f:
             if write_header:

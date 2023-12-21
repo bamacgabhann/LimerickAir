@@ -20,10 +20,7 @@ class LA_unit:
             ITM = Point(),
             latlong = Point()
             ):
-        if name is None:
-            self.name = socket.gethostname()
-        else:
-            self.name = name
+        self.name = socket.gethostname() if name is None else name
         self.folder = f'./{self.name}'
         self.location = location
         self.loc_abbr = loc_abbr

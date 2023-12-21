@@ -158,10 +158,7 @@ class LA_NEO6M:
             serialGPIO = 24,
             baud = 9600
             ):
-        if name is None:
-            self.name = socket.gethostname()
-        else:
-            self.name = name
+        self.name = socket.gethostname() if name is None else name
         self.folder = f'./{self.name}'
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
@@ -186,13 +183,12 @@ class LA_NEO6M:
 
             if bytes_read == 0:
                 continue
-            else:
-                try:
-                    payload_str = payload.decode("utf-8", "ignore")
-                except AttributeError:
-                    continue
-                
-                return payload_str
+            try:
+                payload_str = payload.decode("utf-8", "ignore")
+            except AttributeError:
+                continue
+
+            return payload_str
 
     def _compile_complete(self):
         
@@ -264,8 +260,6 @@ def main():
 
     str_s = ""  # holds the string building of segments
     str_r = ""  # holds the left-over from a previous string which may contain
-                # the start of a new sentence
-    
     try:
         serial2.bb_serial_read_close(serialGPIO)
     except:
@@ -282,16 +276,16 @@ def main():
             # wait for the start of a new sentence, it starts with a line_start
             if (int(count) == 0): # wait for real data
                 continue
-            
+
             # we have data
             # decode to ascii first so we can use string functions
-            
+
             try:
                 data_s = data.decode("utf-8", "ignore") # discard non-ascii data
 
             except AttributeError:
                 continue
-            
+
             # add the left-over from the previous string if there was one
             data_s = str_r + data_s
 
@@ -299,10 +293,10 @@ def main():
             if line_start in data_s:
 
                 pos = data_s.find(line_start)  # get the position of the line_start
-                
+
                 # save the start of the sentence starting with line_start
                 str_s = right(data_s, pos)  # strip everything to the left
-                
+
                 # look to see if there are more line_start's in this segment
                 if str_s.count(line_start) > 1 :   # there is another one!
                     # skip the first and get the position of the second line_start
@@ -320,7 +314,7 @@ def main():
                     if int(count) == 0 : # only process real data
                         count = 1  # stay in this while loop
                         continue
-                    
+
                     # decode to ascii
                     try:
                         data_s = data.decode("utf-8", "ignore")
@@ -340,10 +334,6 @@ def main():
                             rmc_header, rmc_time_utc, rmc_status, rmc_lat, rmc_lat_ns, rmc_long, rmc_long_ew, rmc_spd_kts, rmc_heading_deg, rmc_date, rmc_magvar, rmc_magvar_ew, rmc_mode_cs = str_s.split(',')
                             with open(f'./{LA_unit}/{LA_unit}_gnss_test3.txt', 'a') as f:
                                 f.write(f'rmc_lat = {rmc_lat}, rmc_long = {rmc_long}')
-#                       elif 'GPVTG' in str_s:
-#                            vtg_header,vtg_cogt,vtg_T,vtg_cogm,vtg_M,vtg_sog,vtg_N,vtg_kph,vtg_K,vtg_mode_cs = str_s.split(',')
-#                            with open(f'./{LA_unit}/{LA_unit}_gnss_test3.txt', 'a') as f:
-#                                f.write(f'vtg_lat = {rmc_lat}, rmc_long = {rmc_long}')
                         elif 'GPGGA' in str_s:
                             gga_header,gga_time,gga_lat,gga_ns,gga_long,gga_ew,gga_FS,gga_NoSV,gga_HDOP,gga_msl,gga_m,gga_Altref,gga_m,gga_DiffAge,gga_DiffStation_cs = str_s.split(',')
                             with open(f'./{LA_unit}/{LA_unit}_gnss_test3.txt', 'a') as f:
@@ -352,9 +342,6 @@ def main():
                             gll_header,gll_lat,gll_ns,gll_long,gll_ew,gll_time,gll_A,gll_cs = str_s.split(',')
                             with open(f'./{LA_unit}/{LA_unit}_gnss_test3.txt', 'a') as f:
                                 f.write(f'gll_lat = {gll_lat}, gll_long = {gll_long}')
-                        else:
-                            pass
-                        
                         # save the left-over, which can be the start of a new sentence
                         str_r = right(data_s, pos+1)
                         # if we have a single "\n", discard it
@@ -363,7 +350,7 @@ def main():
 
                         # start looking for a line_start again
                         break
-                    
+
                     else:
                         # add the segments together
                         str_s = str_s +  data_s
@@ -376,10 +363,7 @@ def main():
                 continue
 
 
-    except KeyboardInterrupt: # Ctrl-C
-        os._exit(130)
-
-    except Exception:
+    except (KeyboardInterrupt, Exception): # Ctrl-C
         os._exit(130)
 
 main()
