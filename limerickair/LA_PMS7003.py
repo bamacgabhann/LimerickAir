@@ -2,7 +2,7 @@ import serial
 import struct
 
 
-class PMS7003(serial.Serial):
+class LA_PMS7003(serial.Serial):
     def __init__(self, serialport=None, setbaudrate=9600):
         super().__init__(port=self.port, baudrate=self.baudrate)
         self.byte1 = 0x42
