@@ -4,6 +4,8 @@ import struct
 
 class LA_PMS7003(serial.Serial):
     def __init__(self, serialport=None, setbaudrate=9600):
+        self.port = serialport
+        self.baudrate = setbaudrate
         super().__init__(port=self.port, baudrate=self.baudrate)
         self.byte1 = 0x42
         self.byte2 = 0x4D
@@ -62,7 +64,7 @@ class LA_PMS7003(serial.Serial):
                 continue
             return payload
 
-    def read_all(self):
+    def read_all_(self):
         reading = self._read_()
         return {
             "PM1_std": reading[self.pm1_std],

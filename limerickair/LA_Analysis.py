@@ -1,5 +1,3 @@
-import sys
-import dropbox
 import pandas as pd
 import numpy as np
 import matplotlib.patches as patches
@@ -7,8 +5,6 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 from matplotlib.offsetbox import AnchoredOffsetbox, TextArea, VPacker
-from dropbox.files import WriteMode
-from dropbox.exceptions import ApiError, AuthError
 
 import datetime as dt
 
@@ -25,6 +21,7 @@ class LA_Analysis:
         pm_csv=None,
         daily=True,
     ):
+        self.daily = daily
         self.LA_unit = sensor if sensor is not None else "LAxx"
         self.date = dt.date.today() - dt.timedelta(days=1) if date is None else date
         self.LA_location = LA_location if LA_location is not None else "xx"
@@ -53,9 +50,8 @@ class LA_Analysis:
                     f"./{self.LA_unit}/{self.LA_unit}_{(dt.date.today()-dt.timedelta(days=1)).isoformat()}_5m.csv"
                 )
                 self.create_graph()
-                self.la_to_dropbox()
             except FileNotFoundError:
-                return "CSV not found"
+                pass
 
     def read_pm_csv(self):
         try:
@@ -302,50 +298,3 @@ class LA_Analysis:
             f"./{self.LA_unit}/{self.LA_unit}_{self.date.isoformat()}.png",
             bbox_inches="tight",
         )
-
-    def la_to_dropbox(self):
-        # Establish list of files to upload
-        upload_list = [
-            f"./{self.LA_unit}/{self.LA_unit}_{(self.date).isoformat()}.csv",
-            f"./{self.LA_unit}/{self.LA_unit}_{(self.date).isoformat()}_5m.csv"
-            f"./{self.LA_unit}/{self.LA_unit}_{(self.date).isoformat()}.png",
-        ]
-
-        # Set path in Dropbox folder
-        DBPATH = f"/Research/LimerickAir/{self.LA_unit}/"  # Keep the forward slash before destination filename
-
-        # Create an instance of a Dropbox class, which can make requests to the API.
-
-        # Access token
-        TOKEN = "sl.BqUffC5nw1NPc79zfc9tGhB9X3wYkLhnGggEayROzZyCb-gPOO1Qk7_hv8t6wO0M6IhiC_NNEYudoOv7WRpMc4-S-EhyF7jH6ROGS3V79RkhLvQxA4SKWQZtCvo6fT52fXbCqyFX5s10"
-        dbx = dropbox.Dropbox(TOKEN)
-
-        # Check that the access token is valid
-        try:
-            dbx.users_get_current_account()
-        except AuthError:
-            sys.exit(
-                "ERROR: Invalid access token; try re-generating an access token from the app console on the web."
-            )
-
-        # Create a backup of the current file
-        for file_to_upload in upload_list:
-            with open(file_to_upload, "rb") as f:
-                # We use WriteMode=overwrite to make sure that the settings in the file are changed on upload
-                BACKUPPATH = DBPATH + file_to_upload[2:]
-                try:
-                    dbx.files_upload(f.read(), BACKUPPATH, mode=WriteMode("overwrite"))
-                except ApiError as err:
-                    # This checks for the specific error where a user doesn't have
-                    # enough Dropbox space quota to upload this file
-                    if (
-                        err.error.is_path()
-                        and err.error.get_path().reason.is_insufficient_space()
-                    ):
-                        sys.exit("ERROR: Cannot back up; insufficient space.")
-                    elif err.user_message_text:
-                        print(err.user_message_text)
-                        sys.exit()
-                    else:
-                        print(err)
-                        sys.exit()
