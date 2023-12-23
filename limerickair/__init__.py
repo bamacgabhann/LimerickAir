@@ -7,21 +7,38 @@ from .LA_PMS7003 import LA_PMS7003  # noqa F401
 from .LA_GNSS import LA_GNSS  # noqa F401
 from .LA_Analysis import LA_Analysis  # noqa F401
 
-# Uncomment the below, adjusting the values,
-# to define the sensor class instance here
-# Otherwise set sensor class instance in LA_utils.py or elsewhere
 
-if __name__ == "__main__":
-    LimerickAirXX = LA_unit(
-        location="Limerick", loc_abbr="LK", fixed=True, ITM=Point(), latlong=Point()
+LimerickAir = LA_unit(
+    location="Limerick", loc_abbr="LK", fixed=True, itm=Point(), latlong=Point()
+)
+analyser = LA_Analysis(
+    sensor=LimerickAir.name,
+    location=LimerickAir.location,
+    loc_abbr=LimerickAir.loc_abbr,
+    itm=LimerickAir.itm,
+    latlong=LimerickAir.latlong,
+    fixed=LimerickAir.fixed,
+    daily=True,
+)
+
+
+def daily_analysis():
+    analyser.analyse(
+        sensor=LimerickAir.name, pm=True, env=True, gnss=False, pm_env=False, daily=True
     )
-    pm = threading.Thread(LimerickAirXX.record_pm())
-    env = threading.Timer(60, LimerickAirXX.record_env())
-    analysis = threading.Timer(86400, run_la_analysis())
 
+
+def main():
+    pm = threading.Thread(target=LimerickAir.record_pm, args=[0])
+    env = threading.Thread(target=LimerickAir.record_env, args=[60])
+    analysis = threading.Thread(target=daily_analysis, args=[])
     pm.start()
     env.start()
     analysis.start()
+
+
+if __name__ == "__main__":
+    main()
 
 name = "limerickair"
 __version__ = "0.1.1"

@@ -9,6 +9,9 @@ import os
 import socket
 import csv
 import datetime as dt
+import time
+
+from numbers import Number
 from shapely.geometry.point import Point
 from geopandas import GeoSeries
 
@@ -23,71 +26,101 @@ class LA_unit:
         location="Limerick",
         loc_abbr="LK",
         fixed=True,
-        ITM=Point(),
+        itm=Point(),
         latlong=Point(),
     ):
         self.name = socket.gethostname() if name is None else name
         self.folder = f"./{self.name}"
-        if not os.path.exists(f"./{LA_unit}"):
-            os.makedirs(f"./{LA_unit}")
+        os.makedirs(self.folder, exist_ok=True)
         self.location = location
         self.loc_abbr = loc_abbr
         self.fixed = fixed
         if self.fixed is True:
-            if ITM == Point() and latlong == Point():
+            if itm == Point() and latlong == Point():
                 pass
-            elif ITM != Point() and latlong != Point():
-                self.ITM = ITM
+            elif itm != Point() and latlong != Point():
+                self.itm = itm
                 self.latlong = latlong
-            elif ITM != Point() and latlong == Point():
-                self.ITM = ITM
-                self.latlong = self.ITM_to_latlong()
-            elif ITM == Point() and latlong != Point():
+            elif itm != Point() and latlong == Point():
+                self.itm = itm
+                self.latlong = self.itm_to_latlong()
+            elif itm == Point() and latlong != Point():
                 self.latlong = latlong
-                self.ITM = self.latlong_to_ITM()
+                self.itm = self.latlong_to_itm()
+        #        if fixed:
+        #            self.ITM = ITM if not ITM.is_empty else self.latlong_to_ITM()
+        #            self.latlong = latlong if not latlong.is_empty else self.ITM_to_latlong()
         self.pm_sensor = LA_PMS7003(serialport="/dev/serial0")
         self.env_sensor = LA_BME280()
+        self.pm_header = ["Timestamp", "PM2.5", "PM10"]
+        self.env_header = ["Timestamp", "Temperature", "Pressure", "Humidity"]
+        self.pm_env_header = [
+            "Timestamp",
+            "Temperature",
+            "Pressure",
+            "Humidity",
+            "PM2.5",
+            "PM10",
+        ]
 
-    def ITM_to_latlong(self):
-        gs_itm = GeoSeries([self.ITM], crs="EPSG:2157")
+    def itm_to_latlong(self):
+        gs_itm = GeoSeries([self.itm], crs="EPSG:2157")
         gs_latlong = gs_itm.to_crs(crs="EPSG:4326")
         return gs_latlong[0]
 
-    def latlong_to_ITM(self):
+    def latlong_to_itm(self):
         gs_latlong = GeoSeries([self.latlong], crs="EPSG:4326")
         gs_itm = gs_latlong.to_crs(crs="EPSG:2157")
         return gs_itm[0]
 
-    def record_pm(self):
-        while True:
-            pm_data = self.pm_sensor.read_atm()
-            pm_reading = [dt.datetime.now(), pm_data["PM2.5_atm"], pm_data["PM10_atm"]]
-            with open(
-                f"./{LA_unit}/{LA_unit}_{pm_reading[0].isoformat()[:10]}_pm.csv", "a"
-            ) as f:
-                (csv.writer(f)).writerow(pm_reading)
+    def _write_to_csv(self, filename, data, header=None):
+        file_path = os.path.join(self.folder, filename)
+        write_header = not os.path.exists(file_path) or os.stat(file_path).st_size == 0
+        with open(file_path, "a", newline="") as f:
+            csv_writer = csv.writer(f)
+            if write_header and header:
+                csv_writer.writerow(header)
+            csv_writer.writerow(data)
 
-    def record_env(self):
+    def get_pm(self):
+        pm_data = self.pm_sensor.read_atm()
+        return [dt.datetime.now(), pm_data["PM2.5_atm"], pm_data["PM10_atm"]]
+
+    def record_pm(self, *args):
+        while True:
+            pm_reading = self.get_pm()
+            filename = f"{self.name}_{pm_reading[0].isoformat()[:10]}_pm.csv"
+            self._write_to_csv(filename, pm_reading, header=self.pm_header)
+            if "once" in args:
+                break
+            if isinstance(args[0], Number) and args[0] > 0:
+                time.sleep(args[0])
+
+    def get_env(self):
         env_data = self.env_sensor.read_tph(smode="forced")
-        env_reading = [
+        return [
             dt.datetime.now(),
             env_data["temperature"],
             env_data["pressure"],
             env_data["humidity"],
         ]
-        with open(
-            f"./{LA_unit}/{LA_unit}_{env_reading[0].isoformat()[:10]}_env.csv",
-            "a",
-            newline="",
-        ) as f:
-            (csv.writer(f)).writerow(env_reading)
 
-    def record_pm_env(self):
+    def record_env(self, *args):
+        while True:
+            env_reading = self.get_env()
+            filename = f"{self.name}_{env_reading[0].isoformat()[:10]}_env.csv"
+            self._write_to_csv(env_reading, filename, header=self.env_header)
+            if "once" in args:
+                break
+            if isinstance(args[0], Number) and args[0] > 0:
+                time.sleep(args[0])
+
+    def get_pm_env(self):
         while True:
             now = dt.datetime.now()
             pm_data = self.pm_sensor.read_atm()
             env_data = self.env_sensor.read_tph(smode="forced")
-            pm_env_reading = [
+            return [
                 now,
                 env_data["temperature"],
                 env_data["pressure"],
@@ -95,36 +128,13 @@ class LA_unit:
                 pm_data["PM2.5_atm"],
                 pm_data["PM10_atm"],
             ]
-            daily_file = f"./{LA_unit}/{LA_unit}_{pm_env_reading[0].isoformat[:10]}.csv"
-            write_header = (
-                not os.path.exists(daily_file) or os.stat(daily_file).st_size == 0
-            )
-            with open(daily_file, "a", newline="") as f:
-                if write_header:
-                    (csv.writer(f)).writerow(
-                        [
-                            "Timestamp",
-                            "Temperature",
-                            "Pressure",
-                            "Humidity",
-                            "PM2.5",
-                            "PM10",
-                        ]
-                    )
-                (csv.writer(f)).writerow(pm_env_reading)
 
-
-# Uncomment the below, adjusting the values,
-# to define the sensor class instance here
-# Otherwise use sensor class instance in __init.py__
-# or define elsewhere
-
-"""
-LimerickAirXX = LA_unit(
-    location='Limerick',
-    loc_abbr='LK', 
-    fixed=True,
-    ITM = Point(),
-    latlong = Point()
-    )
-"""
+    def record_pm_env(self, *args):
+        while True:
+            pm_env_reading = self.get_pm_env()
+            filename = f"{self.name}_{pm_env_reading[0].isoformat()[:10]}_pm_env.csv"
+            self._write_to_csv(pm_env_reading, filename, header=self.pm_env_header)
+            if "once" in args:
+                break
+            if isinstance(args[0], Number) and args[0] > 0:
+                time.sleep(args[0])
